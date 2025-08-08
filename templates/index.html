@@ -1,0 +1,60 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Moodboard Generator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 40px auto;
+      max-width: 600px;
+      padding: 20px;
+    }
+    input, button {
+      display: block;
+      width: 100%;
+      margin-bottom: 15px;
+      padding: 10px;
+      font-size: 16px;
+    }
+    label {
+      font-weight: bold;
+    }
+    small {
+      color: #666;
+      font-size: 0.9em;
+    }
+    .note {
+      margin-top: -10px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Moodboard Generator</h1>
+
+  <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data">
+    <label for="name">Project Name</label>
+    <input type="text" name="name" placeholder="e.g. moody_forest" required>
+
+    <label for="url">Paste Video URL (YouTube, Instagram, TikTok, Vimeo)</label>
+    <input type="url" name="url" placeholder="https://...">
+
+    <label for="video">Or Upload a Video File</label>
+    <input type="file" name="video" accept="video/*">
+
+    <label for="cookies">Vimeo cookies.txt (optional)</label>
+    <input type="file" name="cookies" accept=".txt">
+    <div class="note">
+      <small>
+        Some Vimeo videos require authentication. Use 
+        <a href="https://chromewebstore.google.com/detail/get-cookiestxt/gcnaajbjjbifphpcajpipfdpajfblfpk" target="_blank">
+        this browser extension</a> to export your Vimeo <code>cookies.txt</code>.
+      </small>
+    </div>
+
+    <button type="submit">Upload & Generate Moodboard</button>
+  </form>
+</body>
+</html>
