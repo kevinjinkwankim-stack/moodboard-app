@@ -10,6 +10,7 @@ import zipfile
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 512  # 512MB upload limit
 
 UPLOAD_FOLDER = 'uploads'
 FRAME_FOLDER = 'static/frames'
@@ -39,31 +40,44 @@ def upload():
 
     try:
         if video_file:
+            print("Received file:", video_file.filename)
+            print("Saving to:", video_path)
             video_file.save(video_path)
+            print("Video uploaded locally:", video_path)
+
         elif url:
             output_template = os.path.join(download_path, "video.%(ext)s")
-            yt_dlp_command = ["yt-dlp", url, "-o", output_template]
+            yt_dlp_command = ["python", "-m", "yt_dlp", url, "-o", output_template]
 
+            print("Running yt-dlp command:", " ".join(yt_dlp_command))
             result = subprocess.run(yt_dlp_command, capture_output=True, text=True)
+            print("yt-dlp stdout:", result.stdout)
+            print("yt-dlp stderr:", result.stderr)
+
             if result.returncode != 0:
                 return jsonify({"error": "Failed to download URL", "details": result.stderr})
 
             downloaded_files = os.listdir(download_path)
+            print("Downloaded files:", downloaded_files)
+
             for file in downloaded_files:
                 if file.startswith("video."):
-                    ext = file.split(".")[-1]
                     original_file = os.path.join(download_path, file)
                     os.rename(original_file, video_path)
                     break
             else:
-                return jsonify({"error": "Download failed: No video file found."})
+                return jsonify({"error": "Download failed: No compatible video file found.", "files": downloaded_files})
+
         else:
             return jsonify({"error": "No video or URL provided"})
 
+        print("Extracting frames...")
         frames = extract_frames(video_path, project_folder, project_name)
+        print("Frames extracted:", frames)
         return jsonify({"frames": [os.path.join('frames', project_name, f).replace('\\', '/') for f in frames], "project": project_name})
 
     except Exception as e:
+        print("Exception occurred:", str(e))
         return jsonify({"error": str(e)})
 
 @app.route('/download_zip/<project_name>')
@@ -100,13 +114,15 @@ def extract_frames(video_path, output_dir, base_name):
 
     video_manager.set_downscale_factor()
     video_manager.start()
-    scene_manager.detect_scenes(frame_source=video_manager)
 
+    scene_manager.detect_scenes(frame_source=video_manager)
     scene_list = scene_manager.get_scene_list()
+
+    print(f"Detected {len(scene_list)} scenes.")
     frames = []
 
     cap = cv2.VideoCapture(video_path)
-    for idx, (start, end) in enumerate(scene_list):
+    for idx, (start, _) in enumerate(scene_list):
         cap.set(cv2.CAP_PROP_POS_FRAMES, start.get_frames())
         ret, frame = cap.read()
         if ret:
